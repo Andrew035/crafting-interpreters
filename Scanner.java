@@ -27,7 +27,7 @@ class Scanner {
       scanToken();
     }
 
-    tokens.add(new Token(EOF, "", null, line));
+    tokens.add(new Token(TokenType.EOF, "", null, line));
     return tokens;
   }
 
@@ -35,46 +35,46 @@ class Scanner {
     cahr c = advance();
     switch (c) {
       case '(':
-        addToken(LEFT_PAREN);
+        addToken(TokenType.LEFT_PAREN);
         break;
       case ')':
-        addToken(RIGHT_PAREN);
+        addToken(TokenType.RIGHT_PAREN);
         break;
       case '{':
-        addToken(LEFT_BRACE);
+        addToken(TokenType.LEFT_BRACE);
         break;
       case '}':
-        addToken(RIGHT_BRACE);
+        addToken(TokenType.RIGHT_BRACE);
         break;
       case ',':
-        addToken(COMMA);
+        addToken(TokenType.COMMA);
         break;
       case '.':
-        addToken(DOT);
+        addToken(TokenType.DOT);
         break;
       case '-':
-        addToken(MINUS);
+        addToken(TokenType.MINUS);
         break;
       case '+':
-        addToken(PLUS);
+        addToken(TokenType.PLUS);
         break;
       case ';':
-        addToken(SEMICOLON);
+        addToken(TokenType.SEMICOLON);
         break;
       case '*':
-        addToken(STAR);
+        addToken(TokenType.STAR);
         break;
       case '!':
-        addToken(match('=') ? BANG_EQUAL : BANG);
+        addToken(match('=') ? TokenType.BANG_EQUAL : TokenType.BANG);
         break;
       case '=':
-        addToken(match('=') ? EQUAL_EQUAL : EQUAL);
+        addToken(match('=') ? TokenType.EQUAL_EQUAL : TokenType.EQUAL);
         break;
       case '<':
-        addToken(match('=') ? LESS_EQUAL : LESS);
+        addToken(match('=') ? TokenType.LESS_EQUAL : TokenType.LESS);
         break;
       case '>':
-        addToken(match('=') ? GREATER_EQUAL : GREATER);
+        addToken(match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER);
         break;
       case '/':
         if (match('/')) {
@@ -82,7 +82,7 @@ class Scanner {
           while (peek() != '\n' && !isAtEnd())
             advance();
         } else {
-          addToken(SLASH);
+          addToken(TokenType.SLASH);
         }
         break;
       case ' ':
@@ -97,9 +97,40 @@ class Scanner {
         string();
         break;
       default:
-        Lox.error(line, "Unexpected character.");
+        if (isDigit(c)) {
+          number();
+        } else {
+          Lox.error(line, "Unexpected character.");
+        }
         break;
     }
+  }
+
+  private boolean isDigit(char c) {
+    return c >= '0' && c <= '9';
+  }
+
+  private void number() {
+    while (isDigit(peek()))
+      advance();
+
+    // Look for a fractional part
+    if (peek() == '.' && isDigit(peekNext())) {
+      // Consume the "."
+      advance();
+
+      while (isDigit(peek()))
+        advance();
+    }
+
+    addToken(TokenType.NUMBER,
+        Double.parseDouble(source.substring(start, current)));
+  }
+
+  private char peekNext() {
+    if (current + 1 >= source.length())
+      return '\0';
+    return source.charAt(current + 1);
   }
 
   private void string() {
@@ -119,7 +150,7 @@ class Scanner {
 
     // Trim the surrounding quotes
     String value = source.substring(start + 1, current - 1);
-    addToken(STRING, value);
+    addToken(TokenType.STRING, value);
   }
 
   private char peek() {
